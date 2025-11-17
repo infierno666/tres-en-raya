@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tres en Raya - Reactivo y Limpio</title>
+    <!-- Incluir Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Paleta de Colores Reactivos (Reintroduciendo Neon Pink y Cyan)
+        const NEON_PINK = '#FF3870'; // Rosa Vibrante para X
+        const NEON_CYAN = '#00F0FF'; // Cyan Vibrante para O
+        const TEXT_PRIMARY = '#424242';  // Gris oscuro para el texto principal
+        const BG_LIGHT = '#f9f9f9';      // Fondo muy claro
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-pink': NEON_PINK,
+                        'neon-cyan': NEON_CYAN,
+                        'text-primary': TEXT_PRIMARY,
+                        'bg-light': BG_LIGHT,
+                    },
+                    // Reintroducir animación de pulso para iconos ganadores
+                    keyframes: {
+                        'pulse-glow': {
+                            // Sombra de luz ajustada para un fondo claro y colores neon
+                            '0%, 100%': { 'box-shadow': '0 0 5px rgba(0, 0, 0, 0.1), 0 0 10px var(--color-glow)' },
+                            '50%': { 'box-shadow': '0 0 8px rgba(0, 0, 0, 0.2), 0 0 25px var(--color-glow)' },
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulse-glow 1s infinite alternate',
+                    }
+                },
+            },
+            plugins: [],
+        }
+    </script>
+    <!-- Incluir Font Awesome para iconos (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style.css">
+    <!-- Incluir jQuery (CDN) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<!-- Fondo muy claro con un degradado sutil para la luminosidad -->
+
+<body class="bg-bg-light min-h-screen flex items-center justify-center p-4 font-sans text-text-primary">
+
+    <!-- MENÚ (Tarjeta Minimalista) -->
+    <div id="modo-selector"
+        class="flex flex-col items-center space-y-6 text-center opacity-100 transition-all duration-500 p-10 rounded-xl minimal-card">
+
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-wide text-text-primary">
+            TRES EN RAYA <span class="color-o"><i class="fas fa-hashtag"></i>
+        </h1>
+
+        <p class="text-gray-600 text-lg">Selecciona el modo de juego:</p>
+
+        <div class="flex flex-col sm:flex-row gap-5 mt-4">
+            <!-- Botón 2 Jugadores (Estilo Cristal con Borde Neon Rosa en hover) -->
+            <button id="modo-2-jugadores" class="px-10 py-4 bg-white hover:bg-pink-50 rounded-lg minimal-card 
+                       font-semibold transition duration-300 text-text-primary shadow-lg border-2 border-gray-200 
+                       hover:border-neon-pink hover:text-neon-pink hover:shadow-[0_0_15px_rgba(255,56,112,0.3)]">
+                <i class="fa-solid fa-user-group mr-2 color-x"></i> Dos Jugadores
+            </button>
+
+            <!-- Botón vs Máquina (Estilo Cristal con Borde Neon Cian en hover) -->
+            <button id="modo-vs-maquina" class="px-10 py-4 bg-white hover:bg-cyan-50 rounded-lg minimal-card 
+                       font-bold transition duration-300 text-text-primary shadow-lg border-2 border-gray-200 
+                       hover:border-neon-cyan hover:text-neon-cyan hover:shadow-[0_0_15px_rgba(0,240,255,0.4)]">
+                <i class="fa-solid fa-robot mr-2"></i> vs. Máquina
+            </button>
+        </div>
+    </div>
+
+    <!-- JUEGO (Tarjeta Minimalista) -->
+    <div id="juego-contenedor" class="hidden flex flex-col items-center space-y-6">
+
+        <!-- MARCADOR DE PUNTOS -->
+        <div id="marcador" class="flex justify-around items-center w-full max-w-xs sm:max-w-md p-4 rounded-xl 
+                    minimal-card transition-all duration-300 text-text-primary">
+            <!-- Puntuación Jugador X -->
+            <div class="text-center">
+                <p class="text-sm font-semibold text-gray-600">JUGADOR X</p>
+                <p id="score-x" class="text-4xl font-extrabold color-x">0</p>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xl font-bold text-gray-400 mx-4">VS</p>
+            </div>
+
+            <!-- Puntuación Jugador O / Máquina -->
+            <div class="text-center">
+                <p class="text-sm font-semibold text-gray-600">JUGADOR O</p>
+                <p id="score-o" class="text-4xl font-extrabold color-o">0</p>
+            </div>
+        </div>
+
+        <!-- Indicador de turno -->
+        <div id="indicador-turno"
+            class="text-2xl sm:text-3xl font-bold tracking-wide transition duration-300 text-text-primary">
+            Turno: <span id="turno-actual" class="color-x">X</span>
+        </div>
+
+        <!-- Mensaje de Resultado -->
+        <div id="mensaje-resultado" class="hidden text-3xl sm:text-4xl font-extrabold tracking-wide drop-shadow-sm">
+        </div>
+
+        <!-- Tablero - Estilo minimalista -->
+        <div id="tablero" class="grid grid-cols-3 gap-3 p-6 minimal-card rounded-xl w-full max-w-xs sm:max-w-md
+                    transition-all duration-300 relative overflow-hidden">
+
+            <!-- Celdas individuales -->
+            <div id="c0" class="celda"></div>
+            <div id="c1" class="celda"></div>
+            <div id="c2" class="celda"></div>
+            <div id="c3" class="celda"></div>
+            <div id="c4" class="celda"></div>
+            <div id="c5" class="celda"></div>
+            <div id="c6" class="celda"></div>
+            <div id="c7" class="celda"></div>
+            <div id="c8" class="celda"></div>
+
+        </div>
+
+        <!-- Contenedor de Botones -->
+        <div class="flex flex-col items-center gap-4">
+
+            <!-- Fila superior: Controles del juego -->
+            <div class="flex gap-4">
+                <!-- Botón de Reinicio (Jugar de nuevo) - Color Sólido X con Glow Hover -->
+                <button id="reiniciar" class="px-8 py-3 bg-neon-pink hover:bg-pink-600 text-white rounded-lg font-bold transition duration-300 shadow-xl border-2 border-neon-pink 
+                           hover:shadow-[0_0_20px_rgba(255,56,112,0.5)] hidden">
+                    <i class="fa-solid fa-arrows-rotate mr-2"></i> Jugar de Nuevo
+                </button>
+
+                <!-- Botón para Reiniciar Puntos (Estilo Outline/Subtle con Cyan Hover) -->
+                <button id="reset-score"
+                    class="px-6 py-3 bg-white border-2 border-gray-300 hover:border-neon-cyan text-text-primary rounded-lg minimal-card hidden font-semibold transition duration-300 shadow-sm text-sm hover:text-neon-cyan">
+                    <i class="fa-solid fa-sync-alt mr-1"></i> Reiniciar Puntos
+                </button>
+            </div>
+
+            <!-- Fila inferior: Volver al Menú (Estilo Outline/Subtle con Pink Hover) -->
+            <button id="volver-menu"
+                class="px-8 py-3 bg-white border-2 border-gray-300 hover:border-neon-pink text-text-primary rounded-lg minimal-card hidden font-semibold transition duration-300 shadow-sm hover:text-neon-pink">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Volver al Menú
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Lógica JavaScript/jQuery -->
+    <script src="app.js">  </script>
+</body>
+
+</html>

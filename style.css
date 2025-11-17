@@ -1,0 +1,92 @@
+  /* Variables CSS para facilitar la referencia de colores */
+  :root {
+      --neon-pink: #FF3870;
+      --neon-cyan: #00F0FF;
+      --text-primary: #424242;
+  }
+
+  /* Estilos base (Usando Neon Pink/Cyan) */
+  .color-x {
+      color: var(--neon-pink);
+  }
+
+  .color-o {
+      color: var(--neon-cyan);
+  }
+
+  .text-primary {
+      color: var(--text-primary);
+  }
+
+  /* Clases de brillo para iconos y texto (Reintroducidas) */
+  .glow-pink {
+      --color-glow: var(--neon-pink);
+  }
+
+  .glow-cyan {
+      --color-glow: var(--neon-cyan);
+  }
+
+  .winner-icon-glow {
+      text-shadow: 0 0 5px var(--color-glow), 0 0 10px var(--color-glow);
+      animation: pulse-glow 1s infinite alternate;
+  }
+
+  /* Contenedores de "Tarjeta Minimalista" (Manteniendo limpieza con buena elevación) */
+  .minimal-card {
+      background-color: #ffffff;
+      border: 1px solid #eeeeee;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 0 10px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Estilos de las celdas */
+  .celda {
+      width: 7rem;
+      height: 7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s, box-shadow 0.3s;
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 0.75rem;
+      /* Más redondeado */
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Efecto hover en celdas vacías (Ligeramente más reactivo) */
+  .celda:not(.ocupada):hover {
+      background-color: #f5f5f5;
+      transform: scale(1.03);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1), inset 0 0 5px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Estilos para Celdas Ganadoras (Fondo suave con borde y sombra neon) */
+  .win-cell-x {
+      background-color: rgba(255, 56, 112, 0.15) !important;
+      /* Fondo suave de Pink */
+      border: 2px solid var(--neon-pink) !important;
+      box-shadow:
+          0 0 8px var(--neon-pink),
+          0 0 20px rgba(255, 56, 112, 0.4),
+          inset 0 0 5px var(--neon-pink);
+      /* Sombra de énfasis neon */
+  }
+
+  .win-cell-o {
+      background-color: rgba(0, 240, 255, 0.15) !important;
+      /* Fondo suave de Cyan */
+      border: 2px solid var(--neon-cyan) !important;
+      box-shadow:
+          0 0 8px var(--neon-cyan),
+          0 0 20px rgba(0, 240, 255, 0.4),
+          inset 0 0 5px var(--neon-cyan);
+      /* Sombra de énfasis neon */
+  }
+
+  /* Ajuste de color para el spinner de CPU */
+  .cpu-thinking {
+      color: var(--neon-cyan);
+  }

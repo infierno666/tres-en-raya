@@ -1,92 +1,174 @@
-  /* Variables CSS para facilitar la referencia de colores */
-  :root {
-      --neon-pink: #FF3870;
-      --neon-cyan: #00F0FF;
-      --text-primary: #424242;
-  }
 
-  /* Estilos base (Usando Neon Pink/Cyan) */
-  .color-x {
-      color: var(--neon-pink);
-  }
+:root {
+    --bg-cell: #1e1f29;
+    --bg-cell-hover: #252736;
+    --border-color: #2a2d42;
+    --neon-x: #ff3366;
+    --neon-x-glow: rgba(255, 51, 102, 0.5);
+    --neon-x-soft: rgba(255, 51, 102, 0.2);
 
-  .color-o {
-      color: var(--neon-cyan);
-  }
+    --neon-o: #00f0ff;
+    --neon-o-glow: rgba(0, 240, 255, 0.5);
+    --neon-o-soft: rgba(0, 240, 255, 0.2);
+}
 
-  .text-primary {
-      color: var(--text-primary);
-  }
+/* Suavizado general de fuentes y renderizado en pantallas oscuras */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #0f1015;
+    /* Forzamos un fondo oscuro profundo general si es necesario */
+}
 
-  /* Clases de brillo para iconos y texto (Reintroducidas) */
-  .glow-pink {
-      --color-glow: var(--neon-pink);
-  }
+/* ==========================================================================
+   DISEÑO DE LAS CELDAS (Efecto Tecla Flotante sobre Oscuro)
+   ========================================================================== */
+.celda {
+    background-color: var(--bg-cell);
+    border: 1.5px solid var(--border-color);
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    /* Mantiene la celda perfectamente cuadrada siempre */
 
-  .glow-cyan {
-      --color-glow: var(--neon-cyan);
-  }
+    /* Sombra interna y externa para dar profundidad sobre fondo oscuro */
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        inset 0 1px 2px rgba(255, 255, 255, 0.05);
 
-  .winner-icon-glow {
-      text-shadow: 0 0 5px var(--color-glow), 0 0 10px var(--color-glow);
-      animation: pulse-glow 1s infinite alternate;
-  }
+    /* Transiciones fluidas e inmediatas */
+    transition:
+        background-color 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+        transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+        box-shadow 0.25s cubic-bezier(0.25, 1, 0.5, 1),
+        border-color 0.25s ease;
+}
 
-  /* Contenedores de "Tarjeta Minimalista" (Manteniendo limpieza con buena elevación) */
-  .minimal-card {
-      background-color: #ffffff;
-      border: 1px solid #eeeeee;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 0 10px rgba(0, 0, 0, 0.05);
-  }
+/* Efecto Hover (Elevación luminosa) */
+.celda:not(.ocupada):hover {
+    background-color: var(--bg-cell-hover);
+    transform: translateY(-3px);
+    border-color: #3f4463;
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.4),
+        0 0 8px rgba(255, 255, 255, 0.03);
+}
 
-  /* Estilos de las celdas */
-  .celda {
-      width: 7rem;
-      height: 7rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3.5rem;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s, box-shadow 0.3s;
-      background-color: #ffffff;
-      border: 1px solid #e0e0e0;
-      border-radius: 0.75rem;
-      /* Más redondeado */
-      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.03);
-  }
+/* Efecto Click (Hundimiento físico) */
+.celda:not(.ocupada):active {
+    transform: scale(0.95) translateY(0);
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6);
+}
 
-  /* Efecto hover en celdas vacías (Ligeramente más reactivo) */
-  .celda:not(.ocupada):hover {
-      background-color: #f5f5f5;
-      transform: scale(1.03);
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1), inset 0 0 5px rgba(0, 0, 0, 0.05);
-  }
+.celda.ocupada {
+    cursor: default;
+}
 
-  /* Estilos para Celdas Ganadoras (Fondo suave con borde y sombra neon) */
-  .win-cell-x {
-      background-color: rgba(255, 56, 112, 0.15) !important;
-      /* Fondo suave de Pink */
-      border: 2px solid var(--neon-pink) !important;
-      box-shadow:
-          0 0 8px var(--neon-pink),
-          0 0 20px rgba(255, 56, 112, 0.4),
-          inset 0 0 5px var(--neon-pink);
-      /* Sombra de énfasis neon */
-  }
+/* ==========================================================================
+   AJUSTE DE IMÁGENES ABSOLUTO
+   ========================================================================== */
+.celda img {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    pointer-events: none;
+    border-radius: 1.5rem;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 
-  .win-cell-o {
-      background-color: rgba(0, 240, 255, 0.15) !important;
-      /* Fondo suave de Cyan */
-      border: 2px solid var(--neon-cyan) !important;
-      box-shadow:
-          0 0 8px var(--neon-cyan),
-          0 0 20px rgba(0, 240, 255, 0.4),
-          inset 0 0 5px var(--neon-cyan);
-      /* Sombra de énfasis neon */
-  }
+.shadow-img-x {
+    filter: drop-shadow(0 2px 8px rgba(255, 51, 102, 0.2));
+}
 
-  /* Ajuste de color para el spinner de CPU */
-  .cpu-thinking {
-      color: var(--neon-cyan);
-  }
+.shadow-img-o {
+    filter: drop-shadow(0 2px 8px rgba(0, 240, 255, 0.2));
+}
+
+/* ==========================================================================
+   ESTADOS DE VICTORIA DE ALTO IMPACTO (Efecto Sobresaliente)
+   ========================================================================== */
+
+/* Cuando gana X: La línea ganadora se ilumina en un rosa neón intenso y se eleva */
+.win-cell-x {
+    z-index: 10;
+    background-color: var(--neon-x-soft) !important;
+    border: 2px solid var(--neon-x) !important;
+    transform: scale(1.04) !important;
+    /* Sobresale físicamente sobre las demás celdas */
+    box-shadow:
+        0 0 25px var(--neon-x-glow),
+        0 4px 15px rgba(255, 51, 102, 0.3),
+        inset 0 0 12px rgba(255, 51, 102, 0.4) !important;
+    animation: permanentPulseX 1.4s infinite ease-in-out alternate;
+}
+
+/* Cuando gana O: La línea ganadora explota en cian neón */
+.win-cell-o {
+    z-index: 10;
+    background-color: var(--neon-o-soft) !important;
+    border: 2px solid var(--neon-o) !important;
+    transform: scale(1.04) !important;
+    box-shadow:
+        0 0 25px var(--neon-o-glow),
+        0 4px 15px rgba(0, 240, 255, 0.3),
+        inset 0 0 12px rgba(0, 240, 255, 0.4) !important;
+    animation: permanentPulseO 1.4s infinite ease-in-out alternate;
+}
+
+
+/* ==========================================================================
+   ANIMACIONES DE ILUMINACIÓN RÍTMICA
+   ========================================================================== */
+@keyframes permanentPulseX {
+    0% {
+        box-shadow: 0 0 15px var(--neon-x-glow), inset 0 0 8px rgba(255, 51, 102, 0.3);
+        border-color: rgba(255, 51, 102, 0.7);
+    }
+
+    100% {
+        box-shadow: 0 0 30px #ff3366, inset 0 0 16px rgba(255, 51, 102, 0.5);
+        border-color: #ff3366;
+    }
+}
+
+@keyframes permanentPulseO {
+    0% {
+        box-shadow: 0 0 15px var(--neon-o-glow), inset 0 0 8px rgba(0, 240, 255, 0.3);
+        border-color: rgba(0, 240, 255, 0.7);
+    }
+
+    100% {
+        box-shadow: 0 0 30px #00f0ff, inset 0 0 16px rgba(0, 240, 255, 0.5);
+        border-color: #00f0ff;
+    }
+}
+
+/* Entrada limpia para textos en pantalla */
+.animate-fade-in {
+    animation: fadeIn 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.cpu-thinking {
+    font-size: 0.9em;
+    opacity: 0.8;
+}

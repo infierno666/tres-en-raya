@@ -1,282 +1,313 @@
-// Definiciones de Iconos de Font Awesome
-const X_ICON = '<i class="fa-solid fa-xmark"></i>';
-const O_ICON = '<i class="fa-regular fa-circle"></i>';
-const X_COLOR_CLASS = 'color-x';
-const O_COLOR_CLASS = 'color-o';
+// ==========================================
+// CONFIGURACIÓN DE IMÁGENES (Por defecto)
+// ==========================================
+const DEFAULT_IMG_X = 'images/yo.png';
+const DEFAULT_IMG_O = 'images/ia.png';
 
-// Clases de Brillo
-const X_GLOW_CLASS = 'glow-pink';
-const O_GLOW_CLASS = 'glow-cyan';
-const WINNER_ICON_CLASS = 'winner-icon-glow';
+let imgX_URL = DEFAULT_IMG_X;
+let imgO_URL = DEFAULT_IMG_O;
 
-// Clases para el resaltado limpio de las celdas ganadoras 
-const WIN_CELL_X_CLASS = 'win-cell-x';
-const WIN_CELL_O_CLASS = 'win-cell-o';
+const getIconX = () => `<img src="${imgX_URL}" alt="X" class="absolute inset-0 w-full h-full object-cover rounded-[1.5rem] shadow-img-x pointer-events-none">`;
+const getIconO = () => `<img src="${imgO_URL}" alt="O" class="absolute inset-0 w-full h-full object-cover rounded-[1.5rem] shadow-img-o pointer-events-none">`;
 
-// Variables de Estado del Juego
+// ==========================================
+// ESTADO DEL JUEGO
+// ==========================================
 let tablero = ["", "", "", "", "", "", "", "", ""];
 let turno = "X";
+let jugadorInicial = "X";
 let juegoActivo = true;
 let modoMaquina = false;
-
-// Variables de Puntuación
 let puntuacionX = 0;
 let puntuacionO = 0;
 
-// Combinaciones ganadoras (índices del array 'tablero')
 const combinacionesGanadoras = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
     [0, 4, 8], [2, 4, 6]
 ];
 
-// Función para actualizar el marcador en la interfaz
+// ==========================================
+// LÓGICA DEL MOTOR (Evaluación)
+// ==========================================
+function evaluarTablero(tableroActual) {
+    for (let combinacion of combinacionesGanadoras) {
+        const [a, b, c] = combinacion;
+        if (tableroActual[a] && tableroActual[a] === tableroActual[b] && tableroActual[a] === tableroActual[c]) {
+            return { ganador: tableroActual[a], line: combinacion };
+        }
+    }
+    if (!tableroActual.includes("")) return { ganador: "Empate", line: [] };
+    return null;
+}
+
+// ==========================================
+// ALGORITMO MINIMAX (IA Invencible)
+// ==========================================
+function minimax(tableroSimulado, profundidad, esMaximizando) {
+    let estado = evaluarTablero(tableroSimulado);
+
+    if (estado !== null) {
+        if (estado.ganador === "O") return 10 - profundidad;
+        if (estado.ganador === "X") return profundidad - 10;
+        return 0;
+    }
+
+    if (esMaximizando) {
+        let mejorPuntuacion = -Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (tableroSimulado[i] === "") {
+                tableroSimulado[i] = "O";
+                let puntuacion = minimax(tableroSimulado, profundidad + 1, false);
+                tableroSimulado[i] = "";
+                mejorPuntuacion = Math.max(puntuacion, mejorPuntuacion);
+            }
+        }
+        return mejorPuntuacion;
+    } else {
+        let mejorPuntuacion = Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (tableroSimulado[i] === "") {
+                tableroSimulado[i] = "X";
+                let puntuacion = minimax(tableroSimulado, profundidad + 1, true);
+                tableroSimulado[i] = "";
+                mejorPuntuacion = Math.min(puntuacion, mejorPuntuacion);
+            }
+        }
+        return mejorPuntuacion;
+    }
+}
+
+function movimientoMaquinaImparable() {
+    let mejorPuntuacion = -Infinity;
+    let mejorMovimiento;
+
+    if (tablero.filter(c => c === "").length === 9 || (tablero.filter(c => c === "").length === 8 && tablero[4] === "")) {
+        mejorMovimiento = 4;
+    } else {
+        for (let i = 0; i < 9; i++) {
+            if (tablero[i] === "") {
+                tablero[i] = "O";
+                let puntuacion = minimax(tablero, 0, false);
+                tablero[i] = "";
+                if (puntuacion > mejorPuntuacion) {
+                    mejorPuntuacion = puntuacion;
+                    mejorMovimiento = i;
+                }
+            }
+        }
+    }
+    realizarMovimiento(mejorMovimiento);
+}
+
+// ==========================================
+// INTERFAZ DE USUARIO (DOM)
+// ==========================================
 function actualizarPuntuacionDisplay() {
     $("#score-x").text(puntuacionX);
     $("#score-o").text(puntuacionO);
 
-    const labelO = modoMaquina ? 'MÁQUINA' : 'JUGADOR O';
-    const playerOLabel = $('#marcador .text-center').eq(2).find('.text-sm');
-    playerOLabel.text(labelO);
+    const labelX = modoMaquina ? 'TÚ' : 'JUGADOR 1';
+    const labelO = modoMaquina ? 'MÁQUINA' : 'JUGADOR 2';
+
+    $('#marcador div:first-child span:first-child').text(labelX);
+    $('#marcador div:last-child span:first-child').text(labelO);
 }
 
-// Función para verificar si hay un ganador
-function comprobarGanador() {
-    for (const combinacion of combinacionesGanadoras) {
-        const [a, b, c] = combinacion;
-        if (tablero[a] && tablero[a] === tablero[b] && tablero[a] === tablero[c]) {
-            juegoActivo = false;
+function actualizarIndicadorTurno() {
+    let textoTurno = "";
+    const textColorClass = turno === "X" ? "text-player-x" : "text-player-o";
 
-            // 1. Aumentar puntuación
-            const ganadorSimbolo = tablero[a];
-            if (ganadorSimbolo === "X") {
-                puntuacionX++;
-            } else {
-                puntuacionO++;
-            }
-            actualizarPuntuacionDisplay();
-
-            // 2. Destacar las celdas ganadoras con el fondo suave y el brillo del icono
-            const cellWinClass = ganadorSimbolo === "X" ? WIN_CELL_X_CLASS : WIN_CELL_O_CLASS;
-            const ganadorGlowClass = ganadorSimbolo === "X" ? X_GLOW_CLASS : O_GLOW_CLASS;
-
-            $(`#c${a}, #c${b}, #c${c}`)
-                .find('i').addClass(WINNER_ICON_CLASS).addClass(ganadorGlowClass)
-                .end()
-                .addClass(cellWinClass);
-
-            // 3. Mostrar resultado
-            const ganadorTexto = ganadorSimbolo === "X" ? "Jugador X" : (modoMaquina ? "Máquina (O)" : "Jugador O");
-            const mensajeColorClass = ganadorSimbolo === "X" ? X_COLOR_CLASS : O_COLOR_CLASS;
-
-            // Sombra de énfasis en el tablero (Neon)
-            const cleanShadowClass = ganadorSimbolo === "X" ?
-                'shadow-[0_0_30px_rgba(255,56,112,0.5)]' :
-                'shadow-[0_0_30px_rgba(0,240,255,0.6)]';
-
-            $("#mensaje-resultado").html(`<i class="fa-solid fa-trophy mr-2"></i> ¡${ganadorTexto} ha ganado!`).removeClass('hidden').addClass(mensajeColorClass);
-            $("#reiniciar, #volver-menu, #reset-score").removeClass('hidden');
-            $("#indicador-turno").addClass('hidden');
-
-            // 4. Resaltar el tablero con la sombra
-            $('#tablero').addClass(cleanShadowClass);
-            return true;
-        }
+    if (modoMaquina) {
+        textoTurno = turno === "X" ? "Tu turno" : "Turno de la máquina";
+    } else {
+        textoTurno = turno === "X" ? "Turno del Jugador 1" : "Turno del Jugador 2";
     }
-    return false;
+
+    $("#indicador-turno").html(`<span class="${textColorClass} font-bold">${textoTurno}</span>`);
 }
 
-// Función para verificar si hay empate
-function comprobarEmpate() {
-    if (!comprobarGanador() && tablero.every(celda => celda !== "")) {
-        juegoActivo = false;
-        $("#mensaje-resultado").html(`<i class="fa-solid fa-handshake mr-2"></i> ¡Empate!`).removeClass('hidden').addClass('text-text-primary');
-        $("#reiniciar, #volver-menu, #reset-score").removeClass('hidden');
-        $("#indicador-turno").addClass('hidden');
-        // Sombra de empate sutil (gris neutro)
-        $('#tablero').addClass('shadow-[0_0_15px_rgba(0,0,0,0.15)]');
-        return true;
-    }
-    return false;
-}
-
-// Función para cambiar el turno
 function cambiarTurno() {
     turno = turno === "X" ? "O" : "X";
-
-    const colorClass = turno === "X" ? X_COLOR_CLASS : O_COLOR_CLASS;
-    const turnoHTML = `<span id="turno-actual" class="${colorClass}">${turno}</span>`;
+    actualizarIndicadorTurno();
 
     if (modoMaquina && juegoActivo && turno === "O") {
-        $("#indicador-turno").html(`CPU Pensando... <i class="fa-solid fa-hourglass-half ml-1 animate-spin cpu-thinking"></i>`);
-        setTimeout(movimientoMaquina, 1000);
+        setTimeout(movimientoMaquinaImparable, 500);
+    }
+}
+
+function manejarFinDelJuego(estado) {
+    juegoActivo = false;
+
+    $("#indicador-turno").addClass('hidden');
+    $("#mensaje-resultado").removeClass('hidden text-player-x text-player-o text-gray-400');
+    $("#reiniciar, #reset-score, #volver-menu").removeClass('hidden').css('display', 'flex');
+
+    if (estado.ganador === "Empate") {
+        $("#mensaje-resultado").text("Empate").addClass('text-gray-400 animate-fade-in');
     } else {
-        $("#indicador-turno").html(`Turno: ${turnoHTML}`);
-    }
-}
-
-// Lógica de la Máquina (IA Simple) - Mantenida
-function obtenerJugada(simbolo) {
-    for (const combinacion of combinacionesGanadoras) {
-        const [a, b, c] = combinacion;
-        const celdas = [tablero[a], tablero[b], tablero[c]];
-        if (celdas.filter(val => val === simbolo).length === 2) {
-            const indiceVacio = combinacion.find(i => tablero[i] === "");
-            if (indiceVacio !== undefined) {
-                return indiceVacio;
-            }
+        if (estado.ganador === "X") {
+            puntuacionX++;
+            const textoWinX = modoMaquina ? "Has ganado" : "Jugador 1 gana";
+            $("#mensaje-resultado").text(textoWinX).addClass('text-player-x animate-fade-in');
+        } else {
+            puntuacionO++;
+            const textoWinO = modoMaquina ? "La máquina gana" : "Jugador 2 gana";
+            $("#mensaje-resultado").text(textoWinO).addClass('text-player-o animate-fade-in');
         }
-    }
-    return -1;
-}
 
-function movimientoMaquina() {
-    let jugadaGanadora = obtenerJugada("O");
-    if (jugadaGanadora !== -1) {
-        realizarMovimiento(jugadaGanadora);
-        return;
-    }
+        actualizarPuntuacionDisplay();
 
-    let jugadaBloqueo = obtenerJugada("X");
-    if (jugadaBloqueo !== -1) {
-        realizarMovimiento(jugadaBloqueo);
-        return;
-    }
-
-    if (tablero[4] === "") {
-        realizarMovimiento(4);
-        return;
-    }
-
-    const esquinas = [0, 2, 6, 8].filter(index => tablero[index] === "");
-    if (esquinas.length > 0) {
-        let jugadaEsquina = esquinas[Math.floor(Math.random() * esquinas.length)];
-        realizarMovimiento(jugadaEsquina);
-        return;
-    }
-
-    let celdasDisponibles = tablero.map((val, index) => val === "" ? index : -1).filter(index => index !== -1);
-    if (celdasDisponibles.length > 0) {
-        let jugadaAleatoria = celdasDisponibles[Math.floor(Math.random() * celdasDisponibles.length)];
-        realizarMovimiento(jugadaAleatoria);
-        return;
+        const bgWinClass = estado.ganador === "X" ? "win-cell-x" : "win-cell-o";
+        estado.line.forEach(index => {
+            $(`#c${index}`).addClass(bgWinClass);
+        });
     }
 }
-
-
-// ----------------------------------------------------
-// Manejo de Movimiento y Eventos
-// ----------------------------------------------------
 
 function realizarMovimiento(index) {
-    const celda = $(`#c${index}`);
-
     if (juegoActivo && tablero[index] === "") {
-
         tablero[index] = turno;
 
-        const icono = turno === "X" ? X_ICON : O_ICON;
-        const colorClass = turno === "X" ? X_COLOR_CLASS : O_COLOR_CLASS;
-        const glowClass = turno === "X" ? X_GLOW_CLASS : O_GLOW_CLASS;
+        // Aquí generamos el HTML con la imagen actual (sea la subida o la por defecto)
+        const iconoHTML = turno === "X" ? getIconX() : getIconO();
+        const celda = $(`#c${index}`);
 
-        // Añadir la clase glow al ícono
-        celda.html(icono).addClass(colorClass).addClass(glowClass).addClass("ocupada").css('opacity', '0').animate({ opacity: 1 }, 300);
+        celda.html(iconoHTML).addClass("ocupada p-0 relative");
 
-        if (comprobarGanador() || comprobarEmpate()) {
-            return;
+        celda.find('img').css({ opacity: 0, transform: 'scale(0.8)' }).animate(
+            { opacity: 1 },
+            {
+                duration: 200,
+                step: function (now, fx) {
+                    if (fx.prop === "opacity") { $(this).css('transform', `scale(${0.8 + (now * 0.2)})`); }
+                }
+            }
+        );
+
+        let estado = evaluarTablero(tablero);
+        if (estado) {
+            manejarFinDelJuego(estado);
+        } else {
+            cambiarTurno();
         }
-
-        cambiarTurno();
     }
 }
 
-// Función para reiniciar el tablero, NO los puntos
 function reiniciarJuego() {
     tablero = ["", "", "", "", "", "", "", "", ""];
-    turno = "X";
+
+    jugadorInicial = jugadorInicial === "X" ? "O" : "X";
+    turno = jugadorInicial;
     juegoActivo = true;
 
-    // Limpiar celdas, incluyendo las clases de color y brillo
-    $(".celda")
-        .empty()
-        .removeClass(`ocupada ${X_COLOR_CLASS} ${O_COLOR_CLASS} ${WIN_CELL_X_CLASS} ${WIN_CELL_O_CLASS} ${X_GLOW_CLASS} ${O_GLOW_CLASS}`);
+    $(".celda").empty().removeClass("ocupada p-0 relative win-cell-x win-cell-o");
 
-    // Limpiar el efecto de pulso del icono
-    $(".celda i").removeClass(WINNER_ICON_CLASS);
-
-    // Restablecer estilos del tablero (eliminar sombras de ganador/empate)
-    $('#tablero').removeClass('shadow-[0_0_30px_rgba(255,56,112,0.5)] shadow-[0_0_30px_rgba(0,240,255,0.6)] shadow-[0_0_15px_rgba(0,0,0,0.15)]');
-
-    // Restablecer mensajes y botones
-    $("#mensaje-resultado").addClass('hidden').removeClass('color-x color-o text-text-primary');
-
+    $("#mensaje-resultado").addClass('hidden').removeClass('text-player-x text-player-o text-gray-400');
     $("#indicador-turno").removeClass('hidden');
 
-    // Resetear indicador de turno a X (rosa)
-    const initialColorClass = X_COLOR_CLASS;
-    const turnoHTML = `<span id="turno-actual" class="${initialColorClass}">X</span>`;
-    $("#indicador-turno").html(`Turno: ${turnoHTML}`);
+    actualizarIndicadorTurno();
+    $("#reiniciar").addClass('hidden');
 
     if (modoMaquina && turno === "O") {
-        cambiarTurno();
+        setTimeout(movimientoMaquinaImparable, 500);
     }
 }
 
-// Función para resetear solo la puntuación
 function resetearPuntuacion() {
     puntuacionX = 0;
     puntuacionO = 0;
+    jugadorInicial = "O";
     actualizarPuntuacionDisplay();
-    reiniciarJuego(); // Reinicia el tablero también
-    $("#reset-score").addClass('hidden');
+    reiniciarJuego();
 }
 
-// Función para volver al menú principal
 function volverAlMenu() {
     resetearPuntuacion();
-    $("#juego-contenedor").fadeOut(300, function () {
+
+    // Restaurar imágenes por defecto al volver al menú principal
+    imgX_URL = DEFAULT_IMG_X;
+    imgO_URL = DEFAULT_IMG_O;
+    $("#preview-x").attr("src", DEFAULT_IMG_X);
+    $("#preview-o").attr("src", DEFAULT_IMG_O);
+    $("#upload-x, #upload-o").val('');
+
+    $("#juego-contenedor, #config-local").fadeOut(300, function () {
         $("#modo-selector").fadeIn(300);
+        $("#reset-score, #volver-menu, #reiniciar").addClass('hidden');
     });
 }
 
-// Lógica de inicialización al cargar el documento
+// ==========================================
+// INICIALIZACIÓN Y EVENTOS DE CARGA DE FOTOS
+// ==========================================
 $(document).ready(function () {
-
     actualizarPuntuacionDisplay();
 
+    // 1. Manejo de subida de imagen para Jugador 1 (X)
+    $("#upload-x").on("change", function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                imgX_URL = event.target.result; // Guarda la imagen convertida en código
+                $("#preview-x").attr("src", imgX_URL); // Actualiza la vista previa
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // 2. Manejo de subida de imagen para Jugador 2 (O)
+    $("#upload-o").on("change", function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                imgO_URL = event.target.result;
+                $("#preview-o").attr("src", imgO_URL);
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // 3. Evento clic en las celdas
     $(".celda").on("click", function () {
-        if (!juegoActivo) return;
-
-        const id = $(this).attr("id");
-        const index = parseInt(id.substring(1));
-
-        if (modoMaquina && turno === "O") return;
-
+        if (!juegoActivo || (modoMaquina && turno === "O")) return;
+        const index = parseInt($(this).attr("id").substring(1));
         realizarMovimiento(index);
     });
 
     $("#reiniciar").on("click", reiniciarJuego);
     $("#volver-menu").on("click", volverAlMenu);
+    $("#volver-menu-config").on("click", volverAlMenu); // Botón de atrás en la config
     $("#reset-score").on("click", resetearPuntuacion);
 
+    // 4. Flujo de pantallas
     $("#modo-2-jugadores").on("click", function () {
         modoMaquina = false;
+        // En lugar de ir directo al juego, vamos a la pantalla de subir fotos
         $("#modo-selector").fadeOut(300, function () {
-            $("#juego-contenedor").fadeIn(300);
-            resetearPuntuacion();
-            $("#volver-menu, #reset-score").removeClass('hidden');
-            actualizarPuntuacionDisplay();
+            $("#config-local").fadeIn(300).css('display', 'flex');
         });
     });
 
     $("#modo-vs-maquina").on("click", function () {
         modoMaquina = true;
-        $("#modo-selector").fadeOut(300, function () {
-            $("#juego-contenedor").fadeIn(300);
-            resetearPuntuacion();
-            $("#volver-menu, #reset-score").removeClass('hidden');
-            actualizarPuntuacionDisplay();
+        // Contra la IA no subimos fotos, va directo al juego con las de defecto
+        iniciarPantallaJuego();
+    });
+
+    $("#iniciar-duelo-btn").on("click", function () {
+        // Ocultar config y mostrar juego
+        $("#config-local").fadeOut(300, function () {
+            iniciarPantallaJuego();
         });
     });
 
+    function iniciarPantallaJuego() {
+        $("#modo-selector").hide();
+        $("#juego-contenedor").fadeIn(300);
+        resetearPuntuacion();
+        $("#reset-score, #volver-menu").removeClass('hidden').css('display', 'flex');
+    }
 });
